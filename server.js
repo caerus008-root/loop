@@ -4,20 +4,24 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 app.use(express.json());
-app.use(express.static('public'));
 
-// Initialize Gemini API
-// Render will supply the GEMINI_API_KEY from environment variables
+// Initialize Gemini API (API key provided by Render environment variables)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Use gemini-1.5-flash: the recommended model for free-tier general text & chat
+// Use gemini-1.5-flash for free tier usage
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
+// Serve the index.html file from the same directory
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Chat API endpoint
 app.post('/api/chat', async (req, res) => {
     try {
         const { history, message } = req.body;
         
-        // Initialize chat with previous history to maintain context
+        // Start chat with context/history
         const chat = model.startChat({
             history: history ||[],
         });
