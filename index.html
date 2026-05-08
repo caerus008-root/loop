@@ -7,11 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* Neater Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        /* Markdown formatting styles */
         .prose p { margin-bottom: 0.5em; }
         .prose pre { background: #1e293b; color: white; padding: 1em; border-radius: 0.5em; overflow-x: auto; margin-top: 0.5em; margin-bottom: 0.5em; }
         .prose code { font-family: monospace; font-size: 0.9em; }
@@ -30,7 +28,6 @@
 
     <!-- Chat Container -->
     <main class="flex-1 overflow-y-auto p-4 w-full max-w-4xl mx-auto flex flex-col gap-4" id="chat-box">
-        <!-- Welcome Message -->
         <div class="flex justify-start">
             <div class="bg-white text-gray-800 p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 max-w-[85%] prose">
                 <p>Hello! I am powered by <strong>Gemini 1.5 Flash</strong>. How can I help you today?</p>
@@ -52,8 +49,7 @@
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
-        
-        let chatHistory =[]; // Stores context
+        let chatHistory =[]; 
 
         function addMessage(text, isUser) {
             const wrapper = document.createElement('div');
@@ -69,7 +65,7 @@
             if (isUser) {
                 messageDiv.textContent = text;
             } else {
-                messageDiv.innerHTML = marked.parse(text); // Renders Markdown
+                messageDiv.innerHTML = marked.parse(text);
             }
             
             wrapper.appendChild(messageDiv);
@@ -95,7 +91,6 @@
             const message = userInput.value.trim();
             if (!message) return;
 
-            // UI State updates
             userInput.value = '';
             userInput.disabled = true;
             sendBtn.disabled = true;
@@ -117,9 +112,8 @@
                     addMessage("⚠️ Error: " + data.error, false);
                 } else {
                     addMessage(data.text, false);
-                    // Save history to keep context for the next prompt
                     chatHistory.push({ role: 'user', parts: [{ text: message }] });
-                    chatHistory.push({ role: 'model', parts: [{ text: data.text }] });
+                    chatHistory.push({ role: 'model', parts:[{ text: data.text }] });
                 }
             } catch (error) {
                 document.getElementById('loading')?.remove();
