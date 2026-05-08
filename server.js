@@ -8,8 +8,7 @@ app.use(express.json());
 // Initialize Gemini API (API key provided by Render environment variables)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Use gemini-1.5-flash for free tier usage
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // Serve the index.html file from the same directory
 app.get('/', (req, res) => {
