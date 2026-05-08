@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini AI Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Neater Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        /* Markdown formatting styles */
+        .prose p { margin-bottom: 0.5em; }
+        .prose pre { background: #1e293b; color: white; padding: 1em; border-radius: 0.5em; overflow-x: auto; margin-top: 0.5em; margin-bottom: 0.5em; }
+        .prose code { font-family: monospace; font-size: 0.9em; }
+        .prose strong { font-weight: 600; }
+    </style>
+</head>
+<body class="bg-gray-50 h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center z-10">
+        <h1 class="text-xl font-bold flex items-center gap-2">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            Gemini Assistant
+        </h1>
+        <span class="text-xs bg-indigo-800 px-2 py-1 rounded-full border border-indigo-400">gemini-1.5-flash</span>
+    </header>
+
+    <!-- Chat Container -->
+    <main class="flex-1 overflow-y-auto p-4 w-full max-w-4xl mx-auto flex flex-col gap-4" id="chat-box">
+        <!-- Welcome Message -->
+        <div class="flex justify-start">
+            <div class="bg-white text-gray-800 p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 max-w-[85%] prose">
+                <p>Hello! I am powered by <strong>Gemini 1.5 Flash</strong>. How can I help you today?</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Input Area -->
+    <footer class="bg-white p-4 border-t border-gray-200">
+        <div class="max-w-4xl mx-auto flex gap-3">
+            <input type="text" id="user-input" class="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-shadow" placeholder="Message Gemini..." autocomplete="off">
+            <button id="send-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl transition-colors font-medium flex items-center gap-2">
+                Send
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        
+        let chatHistory =[]; // Stores context
+
+        function addMessage(text, isUser) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `p-4 rounded-2xl shadow-sm max-w-[85%] prose ${
+                isUser 
+                ? 'bg-indigo-600 text-white rounded-tr-none' 
+                : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
+            }`;
+            
+            if (isUser) {
+                messageDiv.textContent = text;
+            } else {
+                messageDiv.innerHTML = marked.parse(text); // Renders Markdown
+            }
+            
+            wrapper.appendChild(messageDiv);
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function addLoading() {
+            const wrapper = document.createElement('div');
+            wrapper.id = 'loading';
+            wrapper.className = 'flex justify-start';
+            wrapper.innerHTML = `
+                <div class="bg-white text-gray-500 p-4 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm max-w-[85%] flex gap-1 items-center h-12">
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                </div>`;
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function handleSend() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // UI State updates
+            userInput.value = '';
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+
+            addMessage(message, true);
+            addLoading();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ history: chatHistory, message })
+                });
+                
+                const data = await response.json();
+                document.getElementById('loading').remove();
+                
+                if (data.error) {
+                    addMessage("⚠️ Error: " + data.error, false);
+                } else {
+                    addMessage(data.text, false);
+                    // Save history to keep context for the next prompt
+                    chatHistory.push({ role: 'user', parts: [{ text: message }] });
+                    chatHistory.push({ role: 'model', parts: [{ text: data.text }] });
+                }
+            } catch (error) {
+                document.getElementById('loading')?.remove();
+                addMessage("⚠️ Connection error. Please try again.", false);
+            } finally {
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSend();
+        });
+    </script>
+</body>
+</html>
